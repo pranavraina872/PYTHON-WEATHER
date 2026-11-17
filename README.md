@@ -118,6 +118,17 @@ Inspect the trained model at `/api/model`.
 | `GET /api/model` | Model metadata |
 | `GET /api/health` | Service health check |
 
+## Deploying to Vercel
+
+Vercel detects `app.py` automatically because it exports a Flask instance named `app`. During the build, `build.py` copies `static/` into `public/static/` so Vercel can serve CSS, JavaScript and images from its CDN.
+
+1. Push the repository to GitHub.
+2. In Vercel, choose **Add New → Project** and import `PYTHON-WEATHER`.
+3. Add the environment variable `OPENWEATHER_API_KEY` with your key. The local `.env` file is intentionally not committed.
+4. Deploy, then open the generated URL with `/dashboard` appended.
+
+Use `vercel dev` to test the Vercel setup locally.
+
 ## Presentation Tips
 
 - Run with a live API key and search for a city chosen by the audience.

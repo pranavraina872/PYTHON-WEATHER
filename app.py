@@ -3,6 +3,7 @@ import math
 import os
 import random
 from collections import Counter, OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, jsonify, render_template, request
@@ -337,16 +338,19 @@ def get_weather(city=None, lat=None, lon=None, country=None):
             params["q"] = f"{city},{country}" if country else city
 
         try:
-            current_response = requests.get(f"{BASE_URL}/weather", params=params, timeout=8)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                current_future = executor.submit(requests.get, f"{BASE_URL}/weather", params=params, timeout=5)
+                forecast_future = executor.submit(requests.get, f"{BASE_URL}/forecast", params=params, timeout=5)
+                current_response = current_future.result()
+                forecast_response = forecast_future.result()
+
             if current_response.status_code == 404:
                 label = f"{city},{country}" if country else city
                 raise WeatherServiceError(f"No city found for '{label}'.")
             if current_response.status_code == 401:
                 payload = None
-            elif current_response.status_code == 200:
-                forecast_response = requests.get(f"{BASE_URL}/forecast", params=params, timeout=8)
-                if forecast_response.status_code == 200:
-                    payload = _build_payload(current_response.json(), forecast_response.json(), demo=False)
+            elif current_response.status_code == 200 and forecast_response.status_code == 200:
+                payload = _build_payload(current_response.json(), forecast_response.json(), demo=False)
         except WeatherServiceError:
             raise
         except requests.RequestException:
